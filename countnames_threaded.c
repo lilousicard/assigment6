@@ -126,10 +126,10 @@ int main(int argc, char *argv[])
   } 
 
   printf("create first thread\n");
-  pthread_create(&tid1,NULL,thread_runner,argv[0]);
+  pthread_create(&tid1,NULL,thread_runner,argv[1]);
   
   printf("create second thread\n");
-  pthread_create(&tid2,NULL,thread_runner,argv[1]);
+  pthread_create(&tid2,NULL,thread_runner,argv[2]);
   
   printf("wait for first thread to exit\n");
   pthread_join(tid1,NULL);
@@ -205,7 +205,7 @@ void* thread_runner(void* x)
     else  // after midday
       sprintf(time,"%02d/%02d/%d %02d:%02d:%02d pm", day, month, year, hours - 12, minutes, seconds);
     logindex++;
-    printf("Logindex %d, thread %ld, PID %d, %s: opened file %s\n",logindex,me,getpid(), time , "test");
+    printf("Logindex %d, thread %ld, PID %d, %s: opened file %s\n",logindex,me,getpid(), time , fileName);
 
 
   }
