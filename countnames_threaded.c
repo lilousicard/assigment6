@@ -216,9 +216,14 @@ void* thread_runner(void* x)
 
     //While loop to read file
     char str[30];
+    int lineIndex = 0;
     while(fgets (str, 30, fp) != NULL ) {
-
-      if(str[0]=='\n'||str[0]==0||str[0]==' '){
+      lineIndex++;
+      if(str[0]=='\n'||str[0]==0){
+        fprintf(stderr,"Warning - file %s line %d is empty.\n",fileName,lineIndex);
+        continue;
+      }
+      if(str[0]==' '){
         continue;
       }
 
