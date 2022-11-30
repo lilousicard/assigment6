@@ -243,14 +243,10 @@ void* thread_runner(void* x)
   // TODO use mutex to make this a start of a critical section 
   if (p!=NULL && p->creator==me) {
     printf("This is thread %ld and I delete THREADDATA\n",me);
-  /**
-   * TODO Free the THREADATA object.
-   * Freeing should be done by the same thread that created it.
-   * See how the THREADDATA was created for an example of how this is done.
-   */
+    free(p);
 
   } else {
-    printf("This is thread %ld and I can access the THREADDATA\n",me);
+    printf("This is thread %ld and I can access (but not delete) the THREADDATA\n",me);
   }
   // TODO critical section ends
   pthread_mutex_unlock(&tlock1);  
