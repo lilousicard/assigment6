@@ -50,9 +50,7 @@ int *logip = &logindex;
 
 
 //The name counts.
-// You can use any data structure you like, here are 2 proposals: a linked list OR an array (up to 100 names).
-//The linked list will be faster since you only need to lock one node, while for the array you need to lock the whole array.
-//You can use a linked list template from A5. You should also consider using a hash table, like in A5 (even faster).
+//From 11/12/2022 1628, A6 Channel "Assume you are dealing with at most 100 distinct names of length at most 30 characters"
 struct NAME_STRUCT
 {
   char name[30];
@@ -72,8 +70,8 @@ struct NAME_NODE
 static struct NAME_NODE *hashtab[HASHSIZE]; /* pointer table */
 
 int hash(char first) {
-  //ASCII 'A' = 65
-  return (toupper(first)-65);
+  //printf("in hash debug %c maps to %d\n",first,first%26);
+  return first%26;
 }
 
 struct NAME_NODE *lookup(char* name) {
@@ -94,13 +92,13 @@ struct NAME_NODE *insert(char* name){
     strcpy(np->name_count.name,name);
     np->name_count.count = 1;
     int hashval = hash(name[0]);
+   
     np->next = hashtab[hashval];
     hashtab[hashval] = np;
   } else {
     //Name is in the list
     np->name_count.count = np->name_count.count + 1;
   }
-
   return np;
 }
 
@@ -139,7 +137,16 @@ int main(int argc, char *argv[])
   pthread_join(tid2,NULL);
   printf("second thread exited\n");
 
-  //TODO print out the sum variable with the sum of all the numbers
+  struct NAME_NODE *np;
+  for(int i = 0; i < HASHSIZE; i++){
+    np = hashtab[i];
+    while(np!=NULL){
+      printf("%s: %d\n",np->name_count.name,np->name_count.count);
+      np = np->next;
+    }
+  }
+
+  freeHash();
 
   exit(0);
 
@@ -201,17 +208,38 @@ void* thread_runner(void* x)
     // print local time
     if (hours < 12) // before midday
       sprintf(time,"%02d/%02d/%d %02d:%02d:%02d am", day, month, year, hours, minutes, seconds);
-
     else  // after midday
       sprintf(time,"%02d/%02d/%d %02d:%02d:%02d pm", day, month, year, hours - 12, minutes, seconds);
+    
     logindex++;
     printf("Logindex %d, thread %ld, PID %d, %s: opened file %s\n",logindex,me,getpid(), time , fileName);
 
+    //While loop to read file
+    char str[30];
+    while(fgets (str, 30, fp) != NULL ) {
+
+      if(str[0]=='\n'||str[0]==0||str[0]==' '){
+        continue;
+      }
+
+      //remove new line
+      str[strlen(str)-1] = 0;
+      struct NAME_NODE *np = lookup(str);
+      pthread_mutex_lock(&tlock3);
+      if(np==NULL){
+        insert(str);
+      } else {
+        np->name_count.count = np->name_count.count + 1;
+      }
+      
+      pthread_mutex_unlock(&tlock3);  
+    }
 
   }
 
 
 
+  pthread_mutex_lock(&tlock1);
   // TODO use mutex to make this a start of a critical section 
   if (p!=NULL && p->creator==me) {
     printf("This is thread %ld and I delete THREADDATA\n",me);
@@ -225,6 +253,7 @@ void* thread_runner(void* x)
     printf("This is thread %ld and I can access the THREADDATA\n",me);
   }
   // TODO critical section ends
+  pthread_mutex_unlock(&tlock1);  
 
   pthread_exit(NULL);
   return NULL;
