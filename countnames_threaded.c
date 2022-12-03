@@ -134,6 +134,9 @@ void getTime(char* times){
     sprintf(times,"%02d/%02d/%d %02d:%02d:%02d pm", day, month, year, hours - 12, minutes, seconds);
 }
 
+
+static char* timeStr = NULL;
+
 /*********************************************************
 // function main 
 *********************************************************/
@@ -143,6 +146,7 @@ int main(int argc, char *argv[])
     printf("FATAL ERROR: The number of file you entered is incorrect\n");
     return 0;
   } 
+  timeStr = (char*)malloc(30);
 
   printf("create first thread\n");
   pthread_create(&tid1,NULL,thread_runner,argv[1]);
@@ -170,6 +174,7 @@ int main(int argc, char *argv[])
   }
 
   freeHash();
+  free(timeStr);
 
   exit(0);
 
@@ -185,12 +190,13 @@ void* thread_runner(void* x)
   FILE *fp;
   char* fileName = (char*) x;
   me = pthread_self();
-  char* time = (char*)malloc(30);
+ //char* time = (char*)malloc(30);
+ // char *time = NULL;
 
-  getTime(time);
+  getTime(timeStr);
   pthread_mutex_lock(&tlock1);
   logindex++;
-  printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld (p=%p)\n",logindex,me,getpid(), time , me,p);
+  printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld (p=%p)\n",logindex,me,getpid(), timeStr , me,p);
   pthread_mutex_unlock(&tlock1);
 
 
@@ -202,13 +208,13 @@ void* thread_runner(void* x)
   pthread_mutex_unlock(&tlock2);  // critical section ends
 
   pthread_mutex_lock(&tlock1);
-  getTime(time);
+  getTime(timeStr);
   if (p!=NULL && p->creator==me) {
     logindex++;
-    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I created THREADDATA %p\n",logindex,me,getpid(), time,me,p);
+    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I created THREADDATA %p\n",logindex,me,getpid(), timeStr,me,p);
   } else {
     logindex++;
-    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I can access the THREADDATA %p\n",logindex,me,getpid(), time,me,p);
+    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I can access the THREADDATA %p\n",logindex,me,getpid(), timeStr,me,p);
   }
   pthread_mutex_unlock(&tlock1);
 
@@ -218,10 +224,10 @@ void* thread_runner(void* x)
   if(fp == NULL){
     fprintf(stderr, "range: cannot open file %s\n",fileName);
   } else {
-    getTime(time);
+    getTime(timeStr);
     pthread_mutex_lock(&tlock1);
     logindex++;
-    printf("Logindex %d, thread %ld, PID %d, %s: opened file %s\n",logindex,me,getpid(), time , fileName);
+    printf("Logindex %d, thread %ld, PID %d, %s: opened file %s\n",logindex,me,getpid(), timeStr , fileName);
     pthread_mutex_unlock(&tlock1);
 
     //While loop to read file
@@ -259,21 +265,21 @@ void* thread_runner(void* x)
 
   pthread_mutex_lock(&tlock2);
   // TODO use mutex to make this a start of a critical section 
-  getTime(time);
+  getTime(timeStr);
   if (p!=NULL && p->creator==me) {
-    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I delete THREADDATA\n",logindex,me,getpid(), time ,me);
+    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I delete THREADDATA\n",logindex,me,getpid(), timeStr ,me);
     free(p);
     p=NULL;
 
   } else {
-    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I can access (but not delete) the THREADDATA\n",logindex,me,getpid(), time ,me);
+    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I can access (but not delete) the THREADDATA\n",logindex,me,getpid(), timeStr ,me);
   }
   // TODO critical section ends
   pthread_mutex_unlock(&tlock2);  
 
   pthread_exit(NULL);
 
-  free(time);
+  //free(time);
 
   return NULL;
 
