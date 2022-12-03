@@ -272,6 +272,9 @@ void* thread_runner(void* x)
   pthread_mutex_unlock(&tlock2);  
 
   pthread_exit(NULL);
+
+  free(time);
+
   return NULL;
 
 }//end thread_runner
