@@ -113,6 +113,27 @@ void freeHash(){
   }
 }
 
+void getTime(char* times){
+  time_t now;
+  time(&now);
+  int hours, minutes, seconds, day, month, year;
+  struct tm *local = localtime(&now);
+
+  hours = local->tm_hour;       // get hours since midnight (0-23)
+  minutes = local->tm_min;      // get minutes passed after the hour (0-59)
+  seconds = local->tm_sec;      // get seconds passed after minute (0-59)
+
+  day = local->tm_mday;         // get day of month (1 to 31)
+  month = local->tm_mon + 1;    // get month of year (0 to 11)
+  year = local->tm_year + 1900; // get year since 1900
+
+  // print local time
+  if (hours < 12) // before midday
+    sprintf(times,"%02d/%02d/%d %02d:%02d:%02d am", day, month, year, hours, minutes, seconds);
+  else  // after midday
+    sprintf(times,"%02d/%02d/%d %02d:%02d:%02d pm", day, month, year, hours - 12, minutes, seconds);
+}
+
 /*********************************************************
 // function main 
 *********************************************************/
@@ -136,6 +157,8 @@ int main(int argc, char *argv[])
   printf("wait for second thread to exit\n");
   pthread_join(tid2,NULL);
   printf("second thread exited\n");
+
+  printf("/*********************************************************/\n");
 
   struct NAME_NODE *np;
   for(int i = 0; i < HASHSIZE; i++){
@@ -162,8 +185,15 @@ void* thread_runner(void* x)
   FILE *fp;
   char* fileName = (char*) x;
   me = pthread_self();
-  printf("This is thread %ld (p=%p)\n",me,p);
-  
+  char* time = (char*)malloc(30);
+
+  getTime(time);
+  pthread_mutex_lock(&tlock1);
+  logindex++;
+  printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld (p=%p)\n",logindex,me,getpid(), time , me,p);
+  pthread_mutex_unlock(&tlock1);
+
+
   pthread_mutex_lock(&tlock2); // critical section starts
   if (p==NULL) {
     p = (THREADDATA*) malloc(sizeof(THREADDATA));
@@ -171,48 +201,28 @@ void* thread_runner(void* x)
   }
   pthread_mutex_unlock(&tlock2);  // critical section ends
 
+  pthread_mutex_lock(&tlock1);
+  getTime(time);
   if (p!=NULL && p->creator==me) {
-    printf("This is thread %ld and I created THREADDATA %p\n",me,p);
+    logindex++;
+    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I created THREADDATA %p\n",logindex,me,getpid(), time,me,p);
   } else {
-    printf("This is thread %ld and I can access the THREADDATA %p\n",me,p);
+    logindex++;
+    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I can access the THREADDATA %p\n",logindex,me,getpid(), time,me,p);
   }
+  pthread_mutex_unlock(&tlock1);
 
 
-  /**
-   * //TODO implement any thread name counting functionality you need. 
-   * //Make sure to use any mutex locks appropriately
-   */
   // opening file for reading
   fp = fopen(fileName, "r");
   if(fp == NULL){
     fprintf(stderr, "range: cannot open file %s\n",fileName);
   } else {
-    time_t now;
-    time(&now);
-    int hours, minutes, seconds, day, month, year;
-    char time [30]; 
-    struct tm *local = localtime(&now);
-
-    for(int i = 0; i<30; i++){
-      time[i] = 0;
-    }
-
-    hours = local->tm_hour;       // get hours since midnight (0-23)
-    minutes = local->tm_min;      // get minutes passed after the hour (0-59)
-    seconds = local->tm_sec;      // get seconds passed after minute (0-59)
-
-    day = local->tm_mday;         // get day of month (1 to 31)
-    month = local->tm_mon + 1;    // get month of year (0 to 11)
-    year = local->tm_year + 1900; // get year since 1900
-
-    // print local time
-    if (hours < 12) // before midday
-      sprintf(time,"%02d/%02d/%d %02d:%02d:%02d am", day, month, year, hours, minutes, seconds);
-    else  // after midday
-      sprintf(time,"%02d/%02d/%d %02d:%02d:%02d pm", day, month, year, hours - 12, minutes, seconds);
-    
+    getTime(time);
+    pthread_mutex_lock(&tlock1);
     logindex++;
     printf("Logindex %d, thread %ld, PID %d, %s: opened file %s\n",logindex,me,getpid(), time , fileName);
+    pthread_mutex_unlock(&tlock1);
 
     //While loop to read file
     char str[30];
@@ -242,19 +252,24 @@ void* thread_runner(void* x)
 
   }
 
-
-
   pthread_mutex_lock(&tlock1);
+  logindex++;
+  pthread_mutex_unlock(&tlock1);  
+
+
+  pthread_mutex_lock(&tlock2);
   // TODO use mutex to make this a start of a critical section 
+  getTime(time);
   if (p!=NULL && p->creator==me) {
-    printf("This is thread %ld and I delete THREADDATA\n",me);
+    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I delete THREADDATA\n",logindex,me,getpid(), time ,me);
     free(p);
+    p=NULL;
 
   } else {
-    printf("This is thread %ld and I can access (but not delete) the THREADDATA\n",me);
+    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I can access (but not delete) the THREADDATA\n",logindex,me,getpid(), time ,me);
   }
   // TODO critical section ends
-  pthread_mutex_unlock(&tlock1);  
+  pthread_mutex_unlock(&tlock2);  
 
   pthread_exit(NULL);
   return NULL;
