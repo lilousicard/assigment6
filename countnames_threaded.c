@@ -1,3 +1,13 @@
+/**
+ * Description: This program takes two names files and count the occurence of every name in two different
+ * thread (one for each file). The count is made with a hashmap. The final count of everyname is display
+ * at the end of the execution.
+ * Author name: Lilou Sicard-Noel and Kobern Dare
+ * Author email: lilou.sicard-noel@sjsu.edu && kobern.dare@sjsu.edu
+ * Last modified date: 12/05/2022
+ * Creation date: 11/27/2022
+ * GitHub Repo : https://github.com/lilousicard/assigment6
+ **/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,27 +16,16 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-/*****************************************
-//CS149 Fall 2022
-//Template for assignment 6
-//San Jose State University
-//originally prepared by Bill Andreopoulos
-*****************************************/
-
 
 //thread mutex lock for access to the log index
-//TODO you need to use this mutexlock for mutual exclusion
-//when you print log messages from each thread
 pthread_mutex_t tlock1 = PTHREAD_MUTEX_INITIALIZER;
 
 
 //thread mutex lock for critical sections of allocating THREADDATA
-//TODO you need to use this mutexlock for mutual exclusion
 pthread_mutex_t tlock2 = PTHREAD_MUTEX_INITIALIZER; 
 
 
 //thread mutex lock for access to the name counts data structure
-//TODO you need to use this mutexlock for mutual exclusion
 pthread_mutex_t tlock3 = PTHREAD_MUTEX_INITIALIZER; 
 
 
@@ -69,11 +68,15 @@ struct NAME_NODE
 #define HASHSIZE 26
 static struct NAME_NODE *hashtab[HASHSIZE]; /* pointer table */
 
+//This hash function return an integer value of the reminder of the ASCII value with 26
 int hash(char first) {
   //printf("in hash debug %c maps to %d\n",first,first%26);
   return first%26;
 }
 
+
+//This function is use to find is the name is already in the list and 
+//it returns the node containing the name if it is or null
 struct NAME_NODE *lookup(char* name) {
   struct NAME_NODE *np;
   for (np = hashtab[hash(name[0])]; np != NULL; np = np->next)
@@ -82,6 +85,8 @@ struct NAME_NODE *lookup(char* name) {
   return NULL; /* not found */
 }
 
+// This function insert a node inside the hash table.
+// If the name is already there, the count is increased
 struct NAME_NODE *insert(char* name){
   struct NAME_NODE *np;
   //Name is not already in the list
@@ -102,6 +107,8 @@ struct NAME_NODE *insert(char* name){
   return np;
 }
 
+
+// This function frees the hash so that there is no memory leak
 void freeHash(){
   struct NAME_NODE *np;
   for(int i = 0; i < HASHSIZE; i++){
@@ -113,6 +120,8 @@ void freeHash(){
   }
 }
 
+
+//This function gets the local time and date and update the string parameter
 void getTime(char* times){
   time_t now;
   time(&now);
@@ -162,7 +171,7 @@ int main(int argc, char *argv[])
   pthread_join(tid2,NULL);
   printf("second thread exited\n");
 
-  printf("/*********************************************************/\n");
+  printf("\n/*************************RESULT********************************/\n");
 
   struct NAME_NODE *np;
   for(int i = 0; i < HASHSIZE; i++){
@@ -190,8 +199,6 @@ void* thread_runner(void* x)
   FILE *fp;
   char* fileName = (char*) x;
   me = pthread_self();
- //char* time = (char*)malloc(30);
- // char *time = NULL;
 
   getTime(timeStr);
   pthread_mutex_lock(&tlock1);
@@ -264,22 +271,17 @@ void* thread_runner(void* x)
 
 
   pthread_mutex_lock(&tlock2);
-  // TODO use mutex to make this a start of a critical section 
   getTime(timeStr);
   if (p!=NULL && p->creator==me) {
     printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I delete THREADDATA\n",logindex,me,getpid(), timeStr ,me);
     free(p);
     p=NULL;
 
-  } else {
-    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I can access (but not delete) the THREADDATA\n",logindex,me,getpid(), timeStr ,me);
   }
-  // TODO critical section ends
   pthread_mutex_unlock(&tlock2);  
 
   pthread_exit(NULL);
 
-  //free(time);
 
   return NULL;
 
