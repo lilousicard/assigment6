@@ -203,7 +203,7 @@ void* thread_runner(void* x)
   getTime(timeStr);
   pthread_mutex_lock(&tlock1);
   logindex++;
-  printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld (p=%p)\n",logindex,me,getpid(), timeStr , me,p);
+  printf("Logindex %d, thread %p, PID %d, %s: This is thread %p (p=%p)\n",logindex,me,getpid(), timeStr , me,p);
   pthread_mutex_unlock(&tlock1);
 
 
@@ -218,10 +218,10 @@ void* thread_runner(void* x)
   getTime(timeStr);
   if (p!=NULL && p->creator==me) {
     logindex++;
-    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I created THREADDATA %p\n",logindex,me,getpid(), timeStr,me,p);
+    printf("Logindex %d, thread %p, PID %d, %s: This is thread %p and I created THREADDATA %p\n",logindex,me,getpid(), timeStr,me,p);
   } else {
     logindex++;
-    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I can access the THREADDATA %p\n",logindex,me,getpid(), timeStr,me,p);
+    printf("Logindex %d, thread %p, PID %d, %s: This is thread %p and I can access the THREADDATA %p\n",logindex,me,getpid(), timeStr,me,p);
   }
   pthread_mutex_unlock(&tlock1);
 
@@ -234,7 +234,7 @@ void* thread_runner(void* x)
     getTime(timeStr);
     pthread_mutex_lock(&tlock1);
     logindex++;
-    printf("Logindex %d, thread %ld, PID %d, %s: opened file %s\n",logindex,me,getpid(), timeStr , fileName);
+    printf("Logindex %d, thread %p, PID %d, %s: opened file %s\n",logindex,me,getpid(), timeStr , fileName);
     pthread_mutex_unlock(&tlock1);
 
     //While loop to read file
@@ -251,7 +251,9 @@ void* thread_runner(void* x)
       }
 
       //remove new line
-      str[strlen(str)-1] = 0;
+      if(str[strlen(str)-1] == '\n'){
+        str[strlen(str)-1] = 0;
+      }
       struct NAME_NODE *np = lookup(str);
       pthread_mutex_lock(&tlock3);
       if(np==NULL){
@@ -273,7 +275,7 @@ void* thread_runner(void* x)
   pthread_mutex_lock(&tlock2);
   getTime(timeStr);
   if (p!=NULL && p->creator==me) {
-    printf("Logindex %d, thread %ld, PID %d, %s: This is thread %ld and I delete THREADDATA\n",logindex,me,getpid(), timeStr ,me);
+    printf("Logindex %d, thread %p, PID %d, %s: This is thread %p and I delete THREADDATA\n",logindex,me,getpid(), timeStr ,me);
     free(p);
     p=NULL;
 
